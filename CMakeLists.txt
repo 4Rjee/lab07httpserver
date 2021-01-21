@@ -10,7 +10,6 @@ set(
         "https://github.com/bmstu-iu8-cpp-sem-3/hunter-cache"
         CACHE STRING "Default cache server"
 )
-
 include("cmake/HunterGate.cmake")
 
 HunterGate(
@@ -39,7 +38,7 @@ add_executable(tests
 
         ${CMAKE_CURRENT_SOURCE_DIR}/sources/json_rep.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/sources/suggestion_collect.cpp
-        #${CMAKE_CURRENT_SOURCE_DIR}/sources/source.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/sources/source.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/test.cpp
         )
 

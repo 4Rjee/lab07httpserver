@@ -31,7 +31,7 @@ std::string make_json(const json& data) {
 template <class Body, class Allocator, class Send>
 void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req,
                     Send&& send, const std::shared_ptr<std::timed_mutex>& mutex,
-                    const std::shared_ptr<Suggestions_collection>& collection) {
+                    const std::shared_ptr<suggestion_collect>& collection) {
 
 
   auto const bad_request = [&req](beast::string_view why) {
@@ -86,7 +86,7 @@ void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req,
   }
 
   mutex->lock();
-  auto result = collection->Suggest(input.value());
+  auto result = collection->suggest(input.value());
   mutex->unlock();
   http::string_body::value_type body = make_json(result);
   auto const size = body.size();
@@ -117,7 +117,7 @@ void fail(beast::error_code ec, char const* what) {
 template <class Stream>
 struct send_lambda {
   Stream& stream_;
-  [[maybe_unused]] bool& close_;
+  bool& close_;
   beast::error_code& ec_;
 
   explicit send_lambda(Stream& stream, bool& close, beast::error_code& ec)
@@ -132,7 +132,7 @@ struct send_lambda {
 };
 
 void do_session(net::ip::tcp::socket& socket,
-                const std::shared_ptr<Suggestions_collection>& collection,
+                const std::shared_ptr<suggestion_collect>& collection,
                 const std::shared_ptr<std::timed_mutex>& mutex) {
   bool close = false;
   beast::error_code ec;
@@ -153,14 +153,14 @@ void do_session(net::ip::tcp::socket& socket,
 }
 
 void suggestion_updater(
-    const std::shared_ptr<Json_storage>& storage,
-    const std::shared_ptr<Suggestions_collection>& suggestions,
+    const std::shared_ptr<json_rep>& storage,
+    const std::shared_ptr<suggestion_collect>& suggestions,
     const std::shared_ptr<std::timed_mutex>& mutex) {
   using std::chrono_literals::operator""min;
   for (;;) {
     mutex->lock();
-    storage->Load();/home/kochu/labs/lab04boostfilesystem
-    suggestions->Update(storage->get_storage());
+    storage->load();
+    suggestions->update(storage->get_rep());
     mutex->unlock();
     std::cout << "Suggestions updated" << std::endl;
     std::this_thread::sleep_for(15min);
@@ -169,10 +169,10 @@ void suggestion_updater(
 int run_server(int argc, char** argv) {
   std::shared_ptr<std::timed_mutex> mutex =
       std::make_shared<std::timed_mutex>();
-  std::shared_ptr<Json_storage> storage = std::make_shared<Json_storage>(
-      "C::\\Users/Kavia/CLionProjects/lab-07-http-server/suggestions.json");
-  std::shared_ptr<Suggestions_collection> suggestions =
-      std::make_shared<Suggestions_collection>();
+  std::shared_ptr<json_rep> storage = std::make_shared<json_rep>(
+      "/home/kochu/labs/lab07httpserver/suggestions.json");
+  std::shared_ptr<suggestion_collect> suggestions =
+      std::make_shared<suggestion_collect>();
   try {
     if (argc != 3) {
       std::cerr << "Usage: suggestion_server <address> <port>\n"
@@ -200,7 +200,5 @@ int run_server(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 }
-// Using: ./cmake-build-debug/tests 0.0.0.0 8080
-// int main(int argc, char* argv[]) {
-//  return Run_server(argc, argv);
-//}
+//Using: ./cmake-build-debug/tests 0.0.0.0 8080
+ int main(int argc, char* argv[]) { return run_server(argc, argv); }
